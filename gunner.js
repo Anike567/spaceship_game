@@ -1,8 +1,11 @@
 class Gunner {
-    constructor() {
+    constructor(width = 20, height = 20) {
         this.maxHealth = 10;
         this.remainingHealth = this.maxHealth;
         this.position = { x: 0, y: 0 };
+
+        this.width = width;
+        this.height = height;
 
         this.keyMap = {
             up: [-1, 0],
@@ -18,26 +21,16 @@ class Gunner {
 
     updatePosition(pressedKey) {
         const direction = this.keyMap[pressedKey];
-        if (!direction) return; 
+        if (!direction) return;
 
-        this.position = {
-            x: this.position.x + direction[0],
-            y: this.position.y + direction[1]
-        };
+        this.position.x += direction[0];
+        this.position.y += direction[1];
 
-        if(this.position.x < 0){
-            this.position.x = 0;
-        }
-        if(this.position.x > 19){
-            this.position.x = 19;
-        }
+        // clamp X
+        this.position.x = Math.max(0, Math.min(this.position.x, this.height - 1));
 
-        if(this.position.y < 0){
-            this.position.x = 0;
-        }
-        if(this.position.y > 19){
-            this.position.x = 19;
-        }
+        // clamp Y
+        this.position.y = Math.max(0, Math.min(this.position.y, this.width - 1));
     }
 }
 

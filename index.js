@@ -1,7 +1,9 @@
+const Enemy = require("./enemy");
 const Gunner = require("./gunner");
 
 const WIDTH = 20;
-const HEIGHT = 20;
+const HEIGHT = 10;
+const ENEMY = 3;
 const stdin = process.stdin;
 stdin.setRawMode(true);
 stdin.resume();
@@ -14,24 +16,18 @@ stdin.on('data', (key) => {
     switch (key) {
         case '\u001b[A': // up
             gunner.updatePosition("up");
-            screen[gunner.position.x][gunner.position.y] = 1;
             break;
         case '\u001b[B': // down
             gunner.updatePosition("down");
-            screen[gunner.position.x][gunner.position.y] = 1;
             break;
         case '\u001b[C': // right
             gunner.updatePosition("right");
-            gunner.position
             break;
         case '\u001b[D': // left
             gunner.updatePosition("left");
-            screen[gunner.position.x][gunner.position.y] = 1;
             break;
         case '\u0003':
             process.exit();
-
-        
     }
 });
 
@@ -51,20 +47,29 @@ function clearAndResetCursor() {
 
 function updateTheScreen() {
     for (let i = 0; i < HEIGHT; i++) {
-        for (let j = WIDTH; j >= 0; j--) { 
+        for (let j = WIDTH; j >= 0; j--) {
             if (screen[i][j] === 1) {
-                if(j+1 < WIDTH) {
+                if (j + 1 < WIDTH) {
                     screen[i][j + 1] = 1;
                 }
                 screen[i][j] = 0;
-                break;
+
+            }
+        }
+    }
+
+    for (let i = 0; i < HEIGHT; i++) {
+        for (let j = 0; j < WIDTH; j++) {
+            if (screen[i][j] === ENEMY) {
+                screen[i][j] = 0;
+                if (j - 1 >= 0) screen[i][j - 1] = ENEMY;
             }
         }
     }
 }
 
-function fireBullets(){
-    screen[gunner.position.x ][gunner.position.y + 1] = 1;
+function fireBullets() {
+    screen[gunner.position.x][gunner.position.y + 1] = 1;
 }
 
 function rerender() {
@@ -72,13 +77,16 @@ function rerender() {
 
     for (let i = 0; i < HEIGHT; i++) {
         for (let j = 0; j < WIDTH; j++) {
-            if(screen[i][j] === 2){
+            if (screen[i][j] === 2) {
                 output += screen[i][j] = "A";
             }
-            else{
+            if (screen[i][j] === 3) {
+                output += ")";
+            }
+            else {
                 output += screen[i][j] === 1 ? "-" : ".";
             }
-            
+
         }
         output += "\n";
     }
@@ -100,3 +108,8 @@ setInterval(() => {
     fireBullets();
     rerender();
 }, 100);
+
+setInterval(() => {
+    let enemy = new Enemy();
+    screen[enemy.position.x][enemy.position.y] = 3;
+}, 200)
