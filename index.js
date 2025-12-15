@@ -117,5 +117,6 @@ setInterval(() => {
 
 setInterval(() => {
     let enemy = new Enemy();
+    enemy.nextPoint(gunner);
     screen[enemy.position.x][enemy.position.y] = 3;
 }, 200)
