@@ -9,6 +9,7 @@ stdin.setRawMode(true);
 stdin.resume();
 stdin.setEncoding('utf8');
 const gunner = new Gunner();
+let score = 0;
 
 
 stdin.on('data', (key) => {
@@ -35,6 +36,9 @@ const screen = Array.from({ length: HEIGHT }, () =>
     Array(WIDTH).fill(0)
 );
 
+function detectCollision(){
+    
+}
 
 
 function clearAndResetCursor() {
@@ -66,6 +70,8 @@ function updateTheScreen() {
             }
         }
     }
+
+    console.log(score);
 }
 
 function fireBullets() {

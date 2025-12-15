@@ -1,5 +1,5 @@
 class Gunner {
-    constructor(width = 20, height = 20) {
+    constructor(width = 20, height = 10) {
         this.maxHealth = 10;
         this.remainingHealth = this.maxHealth;
         this.position = { x: 0, y: 0 };
