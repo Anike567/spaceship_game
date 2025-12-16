@@ -3,44 +3,65 @@ const Gunner = require("./gunner");
 
 const WIDTH = 20;
 const HEIGHT = 10;
-const ENEMY = 3;
+
 const stdin = process.stdin;
 stdin.setRawMode(true);
 stdin.resume();
-stdin.setEncoding('utf8');
+stdin.setEncoding("utf8");
+
 const gunner = new Gunner();
-let enemies = [];
+let enemies = new Map();
 let score = 0;
 
-
-stdin.on('data', (key) => {
-
-    switch (key) {
-        case '\u001b[A': // up
-            gunner.updatePosition("up");
-            break;
-        case '\u001b[B': // down
-            gunner.updatePosition("down");
-            break;
-        case '\u001b[C': // right
-            gunner.updatePosition("right");
-            break;
-        case '\u001b[D': // left
-            gunner.updatePosition("left");
-            break;
-        case '\u0003':
-            process.exit();
-    }
-});
+/**
+ *  0 → empty
+ *  1 → bullet
+ *  2 → gunner
+ *  3 → enemy
+ */
 
 const screen = Array.from({ length: HEIGHT }, () =>
     Array(WIDTH).fill(0)
 );
 
-function detectCollision(){
-    
+/* -------------------- INPUT -------------------- */
+
+stdin.on("data", (key) => {
+    switch (key) {
+        case "\u001b[A": gunner.updatePosition("up"); break;
+        case "\u001b[B": gunner.updatePosition("down"); break;
+        case "\u001b[C": gunner.updatePosition("right"); break;
+        case "\u001b[D": gunner.updatePosition("left"); break;
+        case "\u0003": process.exit();
+    }
+});
+
+/* -------------------- COLLISION -------------------- */
+
+function detectCollision() {
+    // bullet vs enemy
+    for (let i = 0; i < HEIGHT; i++) {
+        for (let j = 0; j < WIDTH - 1; j++) {
+            if (screen[i][j] === 1 && screen[i][j + 1] === 3) {
+                screen[i][j] = 0;
+                screen[i][j+1] = 0;
+                score++;
+            }
+        }
+    }
+
+    // enemy vs gunner
+    for (const [en] of enemies) {
+        const { x, y } = en.position;
+        if (x === gunner.position.x && y === gunner.position.y) {
+
+            gunner.updateHealth();
+            enemies.delete(en);
+        }
+    }
 }
 
+/* -------------------- SCREEN UTILS -------------------- */
 
 function clearAndResetCursor() {
     console.clear();
@@ -48,40 +69,47 @@ function clearAndResetCursor() {
     process.stdout.write("\x1b[0f");
 }
 
-// move bullets to the right
+/* -------------------- UPDATE SCREEN -------------------- */
 
 function updateTheScreen() {
+    // move bullets + clear enemies
     for (let i = 0; i < HEIGHT; i++) {
-        for (let j = WIDTH; j >= 0; j--) {
+        for (let j = WIDTH - 1; j >= 0; j--) {
             if (screen[i][j] === 1) {
-                if (j + 1 < WIDTH) {
-                    screen[i][j + 1] = 1;
-                }
+                if (j + 1 < WIDTH) screen[i][j + 1] = 1;
                 screen[i][j] = 0;
-
+            }
+            if (screen[i][j] === 3) {
+                screen[i][j] = 0;
             }
         }
     }
 
-    for (let i = 0; i < HEIGHT; i++) {
-        for (let j = 0; j < WIDTH; j++) {
-            if (screen[i][j] === ENEMY) {
-                screen[i][j] = 0;
-                if (j - 1 >= 0) screen[i][j - 1] = ENEMY;
-            }
+    // move enemies
+    for (const [en] of enemies) {
+        if (!en.route.empty()) {
+            const [x, y] = en.route.dequeue();
+            en.position.x = x;
+            en.position.y = y;
+            screen[x][y] = 3;
+        } else {
+            enemies.delete(en);
         }
     }
-
-    console.log(score);
 }
+
+/* -------------------- BULLETS -------------------- */
 
 function fireBullets() {
-    screen[gunner.position.x][gunner.position.y + 1] = 1;
+    const x = gunner.position.x;
+    const y = gunner.position.y + 1;
+    if (y < WIDTH) screen[x][y] = 1;
 }
+
+/* -------------------- RENDER -------------------- */
 
 function rerender() {
     let output = "";
-
     for (let i = 0; i < HEIGHT; i++) {
         for (let j = 0; j < WIDTH; j++) {
             if (screen[i][j] === 2) {
@@ -93,33 +121,36 @@ function rerender() {
             else {
                 output += screen[i][j] === 1 ? "-" : ".";
             }
-
         }
         output += "\n";
     }
-
+    output += `\nScore: ${score}  Health: ${gunner.getHealth()}`;
     clearAndResetCursor();
     process.stdout.write(output);
 }
 
-
-/**
- *  1 is bullet position in 2D matrix
- *  2 is gunner position in matrix
- *  3 is enemy position in matrix
- */
+/* -------------------- GAME LOOP -------------------- */
 
 setInterval(() => {
-    updateTheScreen();
-    screen[gunner.position.x][gunner.position.y] = 2;
-    fireBullets();
-    rerender();
+    if (gunner.getHealth() > 0) {
+        updateTheScreen();
+        detectCollision();
+        screen[gunner.position.x][gunner.position.y] = 2;
+        
+        rerender();
+    } else {
+        clearAndResetCursor();
+        console.log("GAME OVER");
+        console.log("Final Score:", score);
+        process.exit();
+    }
 }, 100);
 
+/* -------------------- ENEMY SPAWN -------------------- */
+
 setInterval(() => {
-    let enemy = new Enemy(gunner.position);
-    enemies.push(enemy);
-    for (let en of enemies){
-        screen[en.position.x][en.position.y] = 3;
-    }
-}, 200)
+    const enemy = new Enemy(gunner.position);
+    enemies.set(enemy, enemy);
+    screen[enemy.position.x][enemy.position.y] = 3;
+    fireBullets();
+}, 400);

@@ -32,6 +32,12 @@ class Gunner {
         // clamp Y
         this.position.y = Math.max(0, Math.min(this.position.y, this.width - 1));
     }
+    updateHealth(){
+        this.maxHealth = this.maxHealth - 1;
+    }
+    getHealth(){
+        return this.maxHealth;
+    }
 }
 
 module.exports = Gunner;
