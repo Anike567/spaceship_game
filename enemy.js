@@ -1,50 +1,75 @@
 const getRandomInt = require('./utility/getRandomInt');
+const Gunner = require('./gunner');
+const Queue = require('./queue');
 
 class Enemy {
-    constructor() {
+    constructor(gunnerPosition) {
         this.position = {
             x: getRandomInt(),
             y: 19
         };
-
+        this.route = this.generateRoute(gunnerPosition);
         this.health = 5;
+        // this.route.print();
+
     }
-    nextPoint(gunner) {
-        const dirs = [[-1, 0], [1, 0], [0, -1], [0, 1]];
-        const visited = Array.from({ length: 20 }, () => Array(20).fill(false));
-        const queue = [];
+    generateRoute(gunnerPosition) {
+        const gx = gunnerPosition.x;
+        const gy = gunnerPosition.y;
+        const ex = this.position.x;
+        const ey = this.position.y;
 
-        queue.push({ ...this.position, path: [] });
-        visited[this.position.y][this.position.x] = true;
+        const q = new Queue();
+        const visited = new Set();
+        const parentMap = new Map(); // Stores childKey -> parentCoord
 
-        while (queue.length) {
-            const cur = queue.shift();
+        const startKey = `${ex},${ey}`;
+        q.enqueue([ex, ey]);
+        visited.add(startKey);
 
-            if (cur.x === gunner.position.x && cur.y === gunner.position.y) {
-                const [nx, ny] = cur.path[0];
-                this.position.x = nx;
-                this.position.y = ny;
-                return;
+        let foundTarget = null;
+        const dirs = [[0, -1], [1, 0], [-1, 0], [0, 1]];
+
+        // 1. Breadth-First Search to find the goal
+        while (!q.empty()) {
+            const [currX, currY] = q.dequeue();
+
+            if (currX === gx && currY === gy) {
+                foundTarget = [currX, currY];
+                break;
             }
 
             for (const [dx, dy] of dirs) {
-                const nx = cur.x + dx;
-                const ny = cur.y + dy;
+                const nextX = currX + dx;
+                const nextY = currY + dy;
+                const nextKey = `${nextX},${nextY}`;
 
-                if (
-                    nx >= 0 && nx < 20 &&
-                    ny >= 0 && ny < 20 &&
-                    !visited[ny][nx]
-                ) {
-                    visited[ny][nx] = true;
-                    queue.push({
-                        x: nx,
-                        y: ny,
-                        path: cur.path.length ? cur.path : [[nx, ny]]
-                    });
+                // Boundary and visited check
+                if (nextX >= 0 && nextX < 20 && nextY >= 0 && nextY < 20 && !visited.has(nextKey)) {
+                    visited.add(nextKey);
+                    parentMap.set(nextKey, [currX, currY]); 
+                    q.enqueue([nextX, nextY]);
                 }
             }
         }
+
+
+        const shortestRoute = new Queue();
+        if (foundTarget) {
+            let curr = foundTarget;
+            const tempPath = [];
+
+            while (curr) {
+                tempPath.push(curr);
+                const currKey = `${curr[0]},${curr[1]}`;
+                curr = parentMap.get(currKey); // Move to parent
+            }
+
+            // reverse it to go from Start -> End
+            tempPath.reverse().forEach(coord => shortestRoute.enqueue(coord));
+        }
+
+        return shortestRoute;
     }
 
     updateHealth() {
@@ -59,5 +84,6 @@ class Enemy {
     }
 
 }
+
 
 module.exports = Enemy;

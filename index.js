@@ -9,6 +9,7 @@ stdin.setRawMode(true);
 stdin.resume();
 stdin.setEncoding('utf8');
 const gunner = new Gunner();
+let enemies = [];
 let score = 0;
 
 
@@ -116,7 +117,9 @@ setInterval(() => {
 }, 100);
 
 setInterval(() => {
-    let enemy = new Enemy();
-    enemy.nextPoint(gunner);
-    screen[enemy.position.x][enemy.position.y] = 3;
+    let enemy = new Enemy(gunner.position);
+    enemies.push(enemy);
+    for (let en of enemies){
+        screen[en.position.x][en.position.y] = 3;
+    }
 }, 200)
